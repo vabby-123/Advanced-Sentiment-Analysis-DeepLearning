@@ -884,12 +884,21 @@ def main():
                 horizontal=True
             )
             
+            # Initialize session state for current text
+            if 'current_text' not in st.session_state:
+                st.session_state.current_text = ""
+            
             if input_method == "Type text":
                 text_input = st.text_area(
                     "Enter text for sentiment analysis:",
+                    value=st.session_state.get('current_text', ''),
                     height=150,
-                    placeholder="Type your text here... (e.g., 'I love this product!', 'This service is terrible', etc.)"
+                    placeholder="Type your text here... (e.g., 'I love this product!', 'This service is terrible', etc.)",
+                    key="text_input_area"
                 )
+                # Update session state when user types
+                if text_input != st.session_state.get('current_text', ''):
+                    st.session_state.current_text = text_input
             else:
                 uploaded_file = st.file_uploader(
                     "Upload a text file:",
@@ -906,7 +915,7 @@ def main():
                             text_input = ' '.join(df['text'].astype(str))
                         else:
                             st.error("CSV file must have a 'text' column")
-            
+
             # Real-time analysis
             if real_time_mode and text_input and len(text_input) > 10:
                 with st.spinner("Analyzing..."):
@@ -923,7 +932,7 @@ def main():
                                 (Confidence: {pred['confidence']:.3f})
                             </div>
                             """, unsafe_allow_html=True)
-        
+
         with col2:
             # Quick analysis buttons
             st.subheader("Quick Examples")
@@ -936,10 +945,14 @@ def main():
             ]
             
             for i, sample in enumerate(sample_texts):
-                if st.button(f"Example {i+1}", key=f"sample_{i}"):
-                    text_input = sample
+                if st.button(f"Example {i+1}", key=f"sample_{i}", use_container_width=True):
+                    st.session_state.current_text = sample
                     st.rerun()
-        
+                    
+            # Show preview of selected example
+            if st.session_state.current_text:
+                st.info(f"Selected: {st.session_state.current_text[:50]}...")
+                
         # Analysis button and results
         if st.button("🚀 Analyze Sentiment", type="primary", disabled=not text_input or not selected_models):
             if text_input and selected_models:
